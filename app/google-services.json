@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "820344080916",
+    "firebase_url": "https://e-treat-8989b.firebaseio.com",
+    "project_id": "e-treat-8989b",
+    "storage_bucket": "e-treat-8989b.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:820344080916:android:a3a953b18db15373b93501",
+        "android_client_info": {
+          "package_name": "com.example.e_treat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "820344080916-2bnisl3t4fe2c7v2d9er8fqb5bkqpvf5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyApo-mRgQ6YkSP7AiFyRIXLydjo7injU3Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "820344080916-2bnisl3t4fe2c7v2d9er8fqb5bkqpvf5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
