@@ -4,13 +4,12 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.e_treat.model.Patient;
+import com.example.e_treat.model.User;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -28,10 +27,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mainText = findViewById(R.id.main_text_view);
+        mainText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, DoctorInfoActivity.class);
 
-        Intent intent  = getIntent();
+                startActivity(intent);
+                finish();
+            }
+        });
+
+        /*Intent intent  = getIntent();
         String id = intent.getStringExtra("id");
-        getUserName(id);
+        getUserName(id);*/
 
 
     }
@@ -39,12 +47,12 @@ public class MainActivity extends AppCompatActivity {
     private void getUserName(String uId) {
 
         DatabaseReference database = FirebaseDatabase.getInstance().getReference();
-        DatabaseReference ref = database.child("patients");
+        DatabaseReference ref = database.child("users");
         ref.child(uId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
-                Patient patient = snapshot.getValue(Patient.class);
-                String username = patient.getFirstName() + " " + patient.getLastName();
+                User user = snapshot.getValue(User.class);
+                String username = user.getFirstName() + " " + user.getLastName();
                 Toast.makeText(MainActivity.this, "Hi, "+username, Toast.LENGTH_SHORT).show();
             }
             @Override

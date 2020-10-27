@@ -1,12 +1,12 @@
 package com.example.e_treat.model;
 
-public class Patient {
+public class User {
     private String firstName;
     private String lastName;
     private String email;
     private String userId;
 
-    public Patient(String firstName, String lastName, String email, String userId) {
+    public User(String firstName, String lastName, String email, String userId) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -14,7 +14,7 @@ public class Patient {
 
     }
 
-    public Patient() {
+    public User() {
     }
 
     public String getUserId() {

@@ -7,14 +7,13 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.e_treat.model.Patient;
+import com.example.e_treat.model.User;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
@@ -96,10 +95,6 @@ public class SignUpActivity extends AppCompatActivity {
         }
     }
 
-    private void hideSoftKeyboard(){
-        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
-    }
-
     private boolean doStringsMatch(String s1, String s2){
         return s1.equals(s2);
     }
@@ -110,7 +105,7 @@ public class SignUpActivity extends AppCompatActivity {
         finish();
     }
 
-    private void sendVerificationEmail() {
+    /*private void sendVerificationEmail() {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
         if (user != null) {
@@ -128,7 +123,7 @@ public class SignUpActivity extends AppCompatActivity {
                     });
         }
 
-    }
+    }*/
 
     public void registerNewEmail(final String firstName, final String lastName, final String email, String password){
         showDialog();
@@ -144,15 +139,13 @@ public class SignUpActivity extends AppCompatActivity {
                         if (task.isSuccessful()){
                             Log.d(TAG, "onComplete: AuthState: " + FirebaseAuth.getInstance().getCurrentUser().getUid());
 
-                            sendVerificationEmail();
-
                             String uId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                            Patient patient = new Patient(firstName, lastName, email, uId);
+                            User user = new User(firstName, lastName, email, uId);
 
                             FirebaseDatabase.getInstance().getReference()
-                                    .child(getString(R.string.patient_node))
+                                    .child(getString(R.string.user_node))
                                     .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                                    .setValue(patient)
+                                    .setValue(user)
                                     .addOnCompleteListener(new OnCompleteListener<Void>() {
                                         @Override
                                         public void onComplete(@NonNull Task<Void> task) {
@@ -165,9 +158,9 @@ public class SignUpActivity extends AppCompatActivity {
                                 @Override
                                 public void onFailure(@NonNull Exception e) {
                                     Toast.makeText(SignUpActivity.this, "Something went wrong. Try again!", Toast.LENGTH_SHORT).show();
-                                    FirebaseAuth.getInstance().signOut();
-                                    //redirect the user to the login screen
-                                    //openLoginScreen();
+                                    if(FirebaseAuth.getInstance() != null){
+                                        FirebaseAuth.getInstance().signOut();
+                                    }
                                     clearFields();
                                 }
                             });
