@@ -58,7 +58,7 @@ public class FacebookLoginUtil {
                 @Override
                 public void onSuccess(LoginResult loginResult)
                 {
-                    handleFacebookAccessToken(loginResult.getAccessToken(), Profile.getCurrentProfile());
+                    handleFacebookAccessToken(loginResult.getAccessToken());
 
                 }
 
@@ -83,7 +83,7 @@ public class FacebookLoginUtil {
 
     }
 
-    private void handleFacebookAccessToken(AccessToken token, Profile profile) {
+    private void handleFacebookAccessToken(AccessToken token) {
 
         AuthCredential credential = FacebookAuthProvider.getCredential(token.getToken());
         auth.signInWithCredential(credential)
@@ -91,11 +91,12 @@ public class FacebookLoginUtil {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()) {
+                            Profile profile = Profile.getCurrentProfile();
 
                             FirebaseUser user = auth.getCurrentUser();
                             DB_Util db_util = new DB_Util(activity, auth);
                             db_util.addUserToDatabase(profile.getFirstName(), profile.getLastName(), user.getEmail(), "FACEBOOK");
-                            Toast.makeText(activity.getApplicationContext(), "Login successful!", Toast.LENGTH_SHORT).show();
+                            Snackbar.make(activity.getWindow().getDecorView(), "Login successful!", Snackbar.LENGTH_SHORT).show();
 
 
                         } else {
@@ -103,7 +104,6 @@ public class FacebookLoginUtil {
 
                             /*Toast.makeText(activity.getApplicationContext(), "Facebook Authentication failed.",
                                     Toast.LENGTH_SHORT).show();*/
-
                         }
 
                     }
