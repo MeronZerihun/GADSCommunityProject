@@ -2,8 +2,12 @@ package com.example.e_treat;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
@@ -40,9 +44,8 @@ public class MainActivity extends AppCompatActivity {
         /*Intent intent  = getIntent();
         String id = intent.getStringExtra("id");
         getUserName(id);*/
-
-
     }
+
 
     private void getUserName(String uId) {
 

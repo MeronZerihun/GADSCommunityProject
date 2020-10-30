@@ -2,6 +2,7 @@ package com.example.e_treat;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.databinding.DataBindingUtil;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,74 +10,72 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.e_treat.model.User;
+import com.example.e_treat.databinding.ActivitySignInBinding;
+import com.example.e_treat.databinding.ActivitySignUpBinding;
+import com.example.e_treat.helpers.AlertDialogHelper;
+import com.example.e_treat.helpers.DB_Util;
+import com.example.e_treat.helpers.FacebookLoginUtil;
+import com.example.e_treat.helpers.GoogleLoginUtil;
+import com.facebook.CallbackManager;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.auth.api.signin.GoogleSignInClient;
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.FirebaseDatabase;
+
 
 public class SignUpActivity extends AppCompatActivity {
 
+    private static final int GOOGLE_SIGN_IN = 1;
     ProgressBar progressBar;
     EditText firstName, lastName, email, password, confirmPassword;
     Button signUpButton;
+    ImageButton googleButton, facebookButton;
     TextView signInView;
 
     String TAG = "SIGNUP";
+
+    GoogleSignInClient mGoogleClient;
+    FirebaseAuth mAuth;
+
+    private GoogleLoginUtil mGoogleLoginUtil;
+    private FacebookLoginUtil facebookLoginUtil;
+    ActivitySignUpBinding bindingUtil;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_sign_up);
 
-        firstName = findViewById(R.id.first_name_text);
-        lastName = findViewById(R.id.last_name_text);
-        email = findViewById(R.id.email_text);
-        password = findViewById(R.id.password_text);
-        confirmPassword = findViewById(R.id.confirm_password_text);
+        bindingUtil = DataBindingUtil.setContentView(this, R.layout.activity_sign_up);
+        bindingUtil.setActivity(this);
 
+        mAuth = FirebaseAuth.getInstance();
         signUpButton = findViewById(R.id.sign_up_button);
-        signInView = findViewById(R.id.sign_in_view);
-
         progressBar = findViewById(R.id.progress_bar);
 
-        signUpButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if( !isEmpty(firstName.getText().toString())  && !isEmpty(lastName.getText().toString())
-                        && !isEmpty(email.getText().toString())
-                        && !isEmpty(password.getText().toString())
-                        && !isEmpty(confirmPassword.getText().toString()
-                        )){
 
-                    if(doStringsMatch(password.getText().toString(), confirmPassword.getText().toString())){
+    }
 
-                        //Initiate registration task
-                        registerNewEmail(firstName.getText().toString(), lastName.getText().toString(), email.getText().toString(), password.getText().toString());
+    public void startFacebookSignUp() {
 
-                    }else{
-                        Toast.makeText(SignUpActivity.this, "Passwords do not Match", Toast.LENGTH_SHORT).show();
-                        password.setText("");
-                        confirmPassword.setText("");
-                    }
-                }
-            }
-        });
+        facebookLoginUtil = new FacebookLoginUtil(SignUpActivity.this, mAuth, "SIGN_UP");
+        facebookLoginUtil.facebookLogin();
+    }
 
-        signInView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                openLoginScreen();
-            }
-        });
+    public void startGoogleSignUp() {
+        mGoogleLoginUtil = new GoogleLoginUtil(this, mAuth);
+        mGoogleClient = null;
+        mGoogleLoginUtil.openGoogleIntent();
 
     }
 
@@ -86,6 +85,7 @@ public class SignUpActivity extends AppCompatActivity {
 
     private void showDialog(){
         progressBar.setVisibility(View.VISIBLE);
+        signUpButton.setVisibility(View.INVISIBLE);
 
     }
 
@@ -93,100 +93,83 @@ public class SignUpActivity extends AppCompatActivity {
         if(progressBar.getVisibility() == View.VISIBLE){
             progressBar.setVisibility(View.INVISIBLE);
         }
+        signUpButton.setVisibility(View.VISIBLE);
     }
 
     private boolean doStringsMatch(String s1, String s2){
         return s1.equals(s2);
     }
 
-    private void openLoginScreen(){
+    public void openLoginScreen(){
         Intent intent = new Intent(this, SignInActivity.class);
         startActivity(intent);
         finish();
     }
 
-    /*private void sendVerificationEmail() {
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    public void registerNewUserAccount(final String firstName, final String lastName, final String email, String password, String confirmPassword){
 
-        if (user != null) {
-            user.sendEmailVerification()
-                    .addOnCompleteListener(new OnCompleteListener<Void>() {
+        AlertDialogHelper dialogHelper = new AlertDialogHelper(this);
+        if(!dialogHelper.isNetworkAvailable()){
+            dialogHelper.showNoInternetAlertDialog();
+        }
+        else if(firstName.isEmpty() || lastName.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()){
+            Snackbar.make(getWindow().getDecorView(), "Please make sure you have filled all the inputs correctly!", Snackbar.LENGTH_SHORT).show();
+        }
+        else if(!doStringsMatch(password,confirmPassword)){
+            Snackbar.make(getWindow().getDecorView(),  "Passwords do not Match", Snackbar.LENGTH_SHORT).show();
+        }
+        else {
+            showDialog();
+            FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
                         @Override
-                        public void onComplete(@NonNull Task<Void> task) {
-                            if (task.isSuccessful()) {
-                                Toast.makeText(SignUpActivity.this, "Sent Verification Email", Toast.LENGTH_SHORT).show();
+                        public void onComplete(@NonNull Task<AuthResult> task) {
+
+                            if (task.isSuccessful()){
+                                Log.d(TAG, "onComplete: AuthState: " + FirebaseAuth.getInstance().getCurrentUser().getUid());
+                                DB_Util db_util = new DB_Util(SignUpActivity.this, mAuth);
+                                db_util.addUserToDatabase(firstName, lastName, email, "BASIC");
+
                             }
-                            else{
-                                Toast.makeText(SignUpActivity.this, "Couldn't Verification Send Email", Toast.LENGTH_SHORT).show();
+                            if (!task.isSuccessful()) {
+                                Toast.makeText(SignUpActivity.this, "Unable to Register", Toast.LENGTH_SHORT).show();
                             }
+                            hideDialog();
                         }
                     });
         }
 
-    }*/
-
-    public void registerNewEmail(final String firstName, final String lastName, final String email, String password){
-        showDialog();
-        hideSignUpBtn();
-
-        FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
-                .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        Log.d(TAG, "createUserWithEmail:onComplete:" + task.isSuccessful());
-                        Log.d(TAG, firstName+"|"+lastName+"|"+email+"|"+password);
-
-                        if (task.isSuccessful()){
-                            Log.d(TAG, "onComplete: AuthState: " + FirebaseAuth.getInstance().getCurrentUser().getUid());
-
-                            String uId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-                            User user = new User(firstName, lastName, email, uId);
-
-                            FirebaseDatabase.getInstance().getReference()
-                                    .child(getString(R.string.user_node))
-                                    .child(FirebaseAuth.getInstance().getCurrentUser().getUid())
-                                    .setValue(user)
-                                    .addOnCompleteListener(new OnCompleteListener<Void>() {
-                                        @Override
-                                        public void onComplete(@NonNull Task<Void> task) {
-                                            FirebaseAuth.getInstance().signOut();
-
-                                            //redirect the user to the login screen
-                                            openLoginScreen();
-                                        }
-                                    }).addOnFailureListener(new OnFailureListener() {
-                                @Override
-                                public void onFailure(@NonNull Exception e) {
-                                    Toast.makeText(SignUpActivity.this, "Something went wrong. Try again!", Toast.LENGTH_SHORT).show();
-                                    if(FirebaseAuth.getInstance() != null){
-                                        FirebaseAuth.getInstance().signOut();
-                                    }
-                                    clearFields();
-                                }
-                            });
-
-                        }
-                        if (!task.isSuccessful()) {
-                            Toast.makeText(SignUpActivity.this, "Unable to Register", Toast.LENGTH_SHORT).show();
-                        }
-                        showSignUpBtn();
-                        hideDialog();
-                    }
-                });
     }
 
-    private void clearFields() {
-        firstName.setText("");
-        lastName.setText("");
-        email.setText("");
-        password.setText("");
-        confirmPassword.setText("");
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == GOOGLE_SIGN_IN) {
+
+            Task<GoogleSignInAccount> task = GoogleSignIn.getSignedInAccountFromIntent(data);
+            try {
+
+                GoogleSignInAccount account = task.getResult(ApiException.class);
+                Log.d(TAG, "firebaseAuthWithGoogle:" + account.getId());
+
+                mGoogleLoginUtil.firebaseAuthWithGoogle(account.getIdToken(), account);
+            } catch (ApiException e) {
+                Log.w(TAG, "Google sign in failed", e);
+                Snackbar.make(getWindow().getDecorView(), "Authentication Failed.", Snackbar.LENGTH_SHORT).show();
+
+            }
+        }
+        else{
+            facebookLoginUtil.onActivityResultFB(requestCode, resultCode, data);
+
+        }
     }
 
-    private void hideSignUpBtn() {
-        signUpButton.setVisibility(View.INVISIBLE);
+    @Override
+    protected void onDestroy() {
+
+        super.onDestroy();
     }
-    private void showSignUpBtn() {
-        signUpButton.setVisibility(View.VISIBLE);
-    }
+
 }

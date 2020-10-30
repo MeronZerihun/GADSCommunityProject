@@ -5,4 +5,7 @@
     <string name="user_node">users</string>
     <string name="doctor_node">doctors</string>
 
+    <string name="facebook_app_id">294334608240708</string>
+    <string name="fb_login_protocol_scheme">fb294334608240708</string>
+
 </resources>

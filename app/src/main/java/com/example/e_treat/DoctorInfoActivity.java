@@ -3,6 +3,7 @@ package com.example.e_treat;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.databinding.DataBindingUtil;
 
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
@@ -15,11 +16,14 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.example.e_treat.databinding.ActivityDoctorInfoBinding;
+import com.example.e_treat.databinding.ActivitySignUpBinding;
 import com.example.e_treat.model.Doctor;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -36,26 +40,22 @@ public class DoctorInfoActivity extends AppCompatActivity {
     EditText department, qualification, specialization, education, cV, nationalId, academicDocs;
     Button createAccountBtn;
     ProgressBar progressBar;
+    ActivityDoctorInfoBinding bindingUtil;
 
     final HashMap<String, String> urls = new HashMap<>();
 
-    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_doctor_info);
-        
-        
-        department = findViewById(R.id.dept_text);
-        qualification = findViewById(R.id.qualification_text);
-        specialization = findViewById(R.id.specialization_text);
-        education = findViewById(R.id.education_text);
+
+        bindingUtil = DataBindingUtil.setContentView(this, R.layout.activity_doctor_info);
+        bindingUtil.setActivity(this);
+
+
         cV = findViewById(R.id.cv_file);
-        nationalId = findViewById(R.id.national_id_text);
         academicDocs = findViewById(R.id.academic_file);
         
         createAccountBtn = findViewById(R.id.create_account_button);
-        
         progressBar = findViewById(R.id.account_progress);
 
 
@@ -68,30 +68,6 @@ public class DoctorInfoActivity extends AppCompatActivity {
             openFileChooser("Upload Academic Document (Format in PDF)", UPLOAD_DOCS);
             return true;
         });
-
-
-
-        createAccountBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if( !isEmpty(department.getText().toString())  && !isEmpty(qualification.getText().toString())
-                        && !isEmpty(specialization.getText().toString())
-                        && !isEmpty(cV.getText().toString())
-                        && !isEmpty(education.getText().toString())
-                        && !isEmpty(nationalId.getText().toString())
-                        && !isEmpty(academicDocs.getText().toString())
-                ){
-                    showDialog();
-                    createDoctorAccount();
-
-                }
-                else{
-                    Toast.makeText(DoctorInfoActivity.this, "Please make sure that you have filled all the fields correctly!", Toast.LENGTH_SHORT).show();
-
-                }
-            }
-        });
-
 
     }
 
@@ -161,21 +137,31 @@ public class DoctorInfoActivity extends AppCompatActivity {
     private void openFileChooser(String message, int requestCode){
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("application/pdf");
-        intent = Intent.createChooser(intent, message);
-        startActivityForResult(intent, requestCode);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        startActivityForResult(Intent.createChooser(intent, message), requestCode);
 
 
     }
 
-    private void createDoctorAccount() {
+    public void createDoctorAccount(String department, String qualification, String specialization, String education, String nationalId) {
         FirebaseAuth auth = FirebaseAuth.getInstance();
         if(auth.getUid() == null){
             Intent intent = new Intent(this, SignInActivity.class);
             startActivity(intent);
             finish();
         }
+        else if( department.isEmpty()  && qualification.isEmpty()
+                && specialization.isEmpty()
+                && isEmpty(cV.getText().toString())
+                && education.isEmpty()
+                && nationalId.isEmpty()
+                && isEmpty(academicDocs.getText().toString())
+        ){
+            Snackbar.make(getWindow().getDecorView(), "Please make sure you have filled all the inputs correctly!", Snackbar.LENGTH_SHORT).show();
+        }
         else{
-            Doctor doctor = new Doctor(department.getText().toString(), qualification.getText().toString(), specialization.getText().toString(), education.getText().toString(), urls.get("CV"), nationalId.getText().toString(), urls.get("DOCS"));
+            showDialog();
+            Doctor doctor = new Doctor(department, qualification, specialization, education, urls.get("CV"), nationalId, urls.get("DOCS"));
             FirebaseDatabase.getInstance().getReference()
                     .child(getString(R.string.doctor_node))
                     .child(FirebaseAuth.getInstance().getUid())
@@ -185,7 +171,8 @@ public class DoctorInfoActivity extends AppCompatActivity {
                         public void onComplete(@NonNull Task<Void> task) {
                             Toast.makeText(DoctorInfoActivity.this, "Account was successfully created!", Toast.LENGTH_SHORT).show();
                             hideDialog();
-                            clearFields();
+                            openMainActivity();
+                            //clearFields();
                         }
                     }).addOnFailureListener(new OnFailureListener() {
                 @Override
@@ -197,17 +184,16 @@ public class DoctorInfoActivity extends AppCompatActivity {
         }
     }
 
+    private void openMainActivity() {
+        Intent intent = new Intent(this, MainActivity.class);
+        startActivity(intent);
+        finish();
+
+    }
+
     private boolean isEmpty(String string){
         return string.equals("");
     }
 
-    private void clearFields(){
-        department.setText("");
-        qualification.setText("");
-        specialization.setText("");
-        cV.setText("");
-        education.setText("");
-        nationalId.setText("");
-        academicDocs.setText("");
-    }
+
 }
